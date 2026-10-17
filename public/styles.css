@@ -126,6 +126,11 @@ button.link { background: none; border: 0; padding: 0; color: var(--accent); tex
 .chip.ok { background: var(--ok-soft); color: var(--ok); border-color: #c5ddcf; }
 .chip.plain { background: var(--soft); color: var(--muted); border-color: var(--line); }
 
+.part { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin: 30px 0 10px; }
+.part:first-child { margin-top: 0; }
+.part .num { color: var(--accent); margin-right: 6px; }
+.part .muted { font-weight: 400; text-transform: none; letter-spacing: 0; margin-left: 6px; }
+
 /* tables */
 table.data { width: 100%; border-collapse: collapse; font-size: 14px; }
 table.data th { text-align: left; font-size: 12px; font-weight: 500; color: var(--muted); border-bottom: 1px solid var(--line); padding: 6px 8px; }

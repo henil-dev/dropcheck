@@ -88,17 +88,98 @@ function sizing(s) {
     ${s.tooLong ? '<span class="chip warn">Longer than 6 weeks: test a bigger change or a higher-traffic step</span>' : ''}</p>`;
 }
 
+function confidenceBlock(c) {
+  const kind = c.label === 'High' ? 'ok' : c.label === 'Medium' ? 'warn' : 'bad';
+  const rows = [
+    ...c.parts.map((p) => `<tr><td>${esc(p.label)}</td><td class="r num">${p.value}</td></tr>`),
+    ...(c.penalties || []).map((p) => `<tr><td>${esc(p.label)}</td><td class="r num delta-down">${p.value}</td></tr>`),
+  ].join('');
+  const notes = c.notes.length
+    ? `<p class="small muted" style="margin:10px 0 0">Data quality lost points for: ${c.notes.map((n) => `${esc(n.text)} (${n.delta})`).join('; ')}.</p>`
+    : '';
+  return `<section class="block">
+    <div class="block-head"><h2>Confidence</h2><span class="chip ${kind}">${c.label}</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap">
+      <div class="num" style="font-size:44px;line-height:1;font-weight:600">${c.score}<span class="muted" style="font-size:18px">/100</span></div>
+      <div style="flex:1;min-width:240px">
+        <table class="data small"><tbody>${rows}</tbody></table>
+        <p class="small muted" style="margin:6px 0 0">Score = the lower of the two numbers above, minus penalties from the answer checks.</p>
+      </div>
+    </div>${notes}
+  </section>`;
+}
+
+function checkChips(c = {}) {
+  return `${c.generic ? chip('bad', 'Generic') : ''}${c.unsupported ? chip('bad', 'Evidence not found in input') : ''}`;
+}
+
+function diagnosis(ai) {
+  return ai.diagnoses
+    .map(
+      (d) => `<section class="block">
+      <h2>${esc(d.step)}</h2>
+      <h3>Likely reasons</h3>
+      <ol style="padding-left:20px;margin:0 0 18px">
+        ${d.reasons
+          .map(
+            (r) => `<li style="margin-bottom:10px">${esc(r.text)} ${r.kind === 'assumption' ? chip('warn', 'Assumption') : ''}${checkChips(r.checks)}
+            ${r.evidence ? `<div class="small muted">${r.kind === 'assumption' ? 'To confirm' : 'Based on'}: "${esc(r.evidence)}"</div>` : ''}</li>`
+          )
+          .join('')}
+      </ol>
+      <h3>Hypotheses to test</h3>
+      <ol style="padding-left:20px;margin:0">
+        ${d.hypotheses
+          .map(
+            (h) => `<li style="margin-bottom:10px">${esc(h.statement)} ${checkChips(h.checks)}
+            <div class="small muted">Change: ${esc(h.change)} · Measure: ${esc(h.metric)}</div></li>`
+          )
+          .join('')}
+      </ol>
+    </section>`
+    )
+    .join('');
+}
+
+function experiment(e, s) {
+  const row = (k, v) => (v ? `<tr><td class="muted" style="width:150px">${k}</td><td>${esc(v)}</td></tr>` : '');
+  const size =
+    s && s.step === e.step && s.perVariant
+      ? `<tr><td class="muted">Sample size</td><td><span class="num">${int(s.perVariant)}</span> per variant, about <span class="num">${s.days}</span> ${s.days === 1 ? 'day' : 'days'} at current traffic (calculated, not from the model)</td></tr>`
+      : '';
+  return `<section class="block" style="border-color:var(--ink)">
+    <div class="block-head"><h2>Run this first</h2><span class="muted small">${esc(e.step)}</span></div>
+    <p style="margin:0 0 14px;font-size:17px;font-weight:500">${esc(e.title)}</p>
+    <table class="data"><tbody>
+      ${row('Control', e.control)}${row('Variant', e.variant)}${row('Primary metric', e.primary_metric)}${row('Guardrail', e.guardrail_metric)}${size}${row('Why this one', e.why_first)}
+    </tbody></table>
+  </section>`;
+}
+
 export function renderReport(rec) {
-  const { logic } = rec;
-  return `
+  const { logic, ai } = rec;
+  const notice =
+    rec.status === 'ok'
+      ? ''
+      : `<div class="alert ${rec.status === 'ai_error' ? 'err' : 'info'}"><strong>${rec.status === 'ai_error' ? 'The AI step failed, so this is the logic-layer report only.' : 'Logic-layer report only.'}</strong><div class="small">${esc(rec.aiError || '')}</div></div>`;
+
+  const part = (n, t, sub) => `<div class="part"><span class="num">${n}</span> ${t} <span class="muted">${sub}</span></div>`;
+
+  return `${notice}
+    ${part('01', 'Checks', 'calculated by code, before any AI')}
     <section class="block">
       <div class="block-head"><h2>Funnel</h2><span class="muted small">${esc(rec.input.funnelName)} · ${rec.input.periodDays} days</span></div>
       ${funnelTable(logic)}
     </section>
     <section class="block">
       <h2>What the checks found</h2>
-      <p class="muted small" style="margin:-6px 0 14px">Calculated by code before any AI is involved.</p>
       ${checks(logic)}
       ${sizing(logic.sizing)}
-    </section>`;
+    </section>
+    ${ai ? part('02', 'Diagnosis', `from ${esc(rec.meta?.model || 'the model')}, then checked by code`) : ''}
+    ${ai?.summary ? `<section class="block"><h2>Summary</h2><p style="margin:0;font-size:16px">${esc(ai.summary)}</p></section>` : ''}
+    ${rec.confidence ? confidenceBlock(rec.confidence) : ''}
+    ${ai ? experiment(ai.experiment, logic.sizing) : ''}
+    ${ai ? diagnosis(ai) : ''}
+    ${ai?.missing_info?.length ? `<section class="block"><h2>Data that would sharpen this</h2><ul style="margin:0;padding-left:18px">${ai.missing_info.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>${ai.confidence_reason ? `<p class="small muted" style="margin:10px 0 0">Model's note on confidence: ${esc(ai.confidence_reason)}</p>` : ''}</section>` : ''}`;
 }
