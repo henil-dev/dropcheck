@@ -4,6 +4,7 @@ import path from 'node:path';
 import { validateFunnel } from './lib/validate.js';
 import { diagnose } from './lib/diagnose.js';
 import { llmConfigured, modelName } from './lib/llm.js';
+import { saveAnalysis, logRejection, listAnalyses, getAnalysis, setFeedback } from './lib/db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -27,12 +28,32 @@ function rateLimit(req, res, next) {
 app.post('/api/analyze', rateLimit, async (req, res, next) => {
   try {
     const v = validateFunnel(req.body);
-    if (!v.ok) return res.status(400).json({ error: 'Please fix the highlighted fields.', errors: v.errors, warnings: v.warnings });
+    if (!v.ok) {
+      logRejection(v.errors);
+      return res.status(400).json({ error: 'Please fix the highlighted fields.', errors: v.errors, warnings: v.warnings });
+    }
     const result = await diagnose(v.data);
-    res.json({ input: v.data, warnings: v.warnings, ...result });
+    const id = saveAnalysis(v.data, v.warnings, result);
+    res.json({ id, input: v.data, warnings: v.warnings, ...result });
   } catch (err) {
     next(err);
   }
+});
+
+app.get('/api/analyses', (req, res) => res.json(listAnalyses()));
+
+app.get('/api/analyses/:id', (req, res) => {
+  const a = getAnalysis(Number(req.params.id));
+  if (!a) return res.status(404).json({ error: 'Analysis not found.' });
+  res.json(a);
+});
+
+app.post('/api/analyses/:id/feedback', (req, res) => {
+  const { feedback, note } = req.body || {};
+  if (!['useful', 'not_useful'].includes(feedback)) return res.status(400).json({ error: 'feedback must be "useful" or "not_useful".' });
+  if (note && String(note).length > 500) return res.status(400).json({ error: 'Note is too long (500 max).' });
+  if (!setFeedback(Number(req.params.id), feedback, note && String(note).trim())) return res.status(404).json({ error: 'Analysis not found.' });
+  res.json({ ok: true });
 });
 
 app.get('/api/health', (req, res) => res.json({ ok: true, llm: llmConfigured(), model: modelName() }));

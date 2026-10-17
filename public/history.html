@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>History · Dropcheck</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <a class="brand" href="/">drop<span>check</span></a>
+      <nav class="nav">
+        <a href="/">New analysis</a>
+        <a href="/history" class="on">History</a>
+        <a href="/admin">Admin</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <h1>Past analyses</h1>
+    <p class="lede">Every analysis is saved, including the ones where the AI step failed.</p>
+    <section class="block" id="list"><p class="muted" style="margin:0">Loading…</p></section>
+  </main>
+
+  <script type="module">
+    import { esc, when } from '/util.js';
+    const box = document.getElementById('list');
+    const status = { ok: ['ok', 'Diagnosed'], logic_only: ['plain', 'Checks only'], ai_error: ['bad', 'AI failed'] };
+    const conf = { High: 'ok', Medium: 'warn', Low: 'bad' };
+    try {
+      const rows = await (await fetch('/api/analyses')).json();
+      if (!rows.length) {
+        box.innerHTML = '<p style="margin:0">Nothing yet. <a href="/">Run your first analysis</a>.</p>';
+      } else {
+        box.innerHTML = `<table class="data"><thead><tr><th>#</th><th>When</th><th>Funnel</th><th>Diagnosed steps</th><th>Result</th><th class="r">Confidence</th><th>Feedback</th></tr></thead><tbody>${rows
+          .map((r) => `<tr>
+            <td class="num muted">${r.id}</td>
+            <td class="small">${when(r.created_at)}</td>
+            <td><a href="/report?id=${r.id}">${esc(r.funnel_name)}</a><div class="small muted">${r.step_count} steps</div></td>
+            <td class="small">${esc(r.focus_steps || '—')}</td>
+            <td><span class="chip ${status[r.status][0]}">${status[r.status][1]}</span></td>
+            <td class="r">${r.confidence === null ? '—' : `<span class="num">${r.confidence}</span> <span class="chip ${conf[r.confidence_label]}">${r.confidence_label}</span>`}</td>
+            <td class="small">${r.feedback === 'useful' ? 'Useful' : r.feedback === 'not_useful' ? 'Not useful' : '<span class="muted">—</span>'}</td>
+          </tr>`)
+          .join('')}</tbody></table>`;
+      }
+    } catch {
+      box.innerHTML = '<div class="alert err" style="margin:0">Could not load history.</div>';
+    }
+  </script>
+</body>
+</html>

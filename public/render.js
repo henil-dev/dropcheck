@@ -156,6 +156,39 @@ function experiment(e, s) {
   </section>`;
 }
 
+// Feedback bar; call wireFeedback(container) after inserting the HTML.
+export function feedbackBar(rec) {
+  if (!rec.id) return '';
+  const given = rec.feedback;
+  return `<section class="block feedback" data-id="${rec.id}">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <strong>Was this useful?</strong>
+      <button type="button" class="ghost" data-fb="useful">Yes</button>
+      <button type="button" class="ghost" data-fb="not_useful">No</button>
+      <span class="muted small fb-status">${given ? `You said: ${given === 'useful' ? 'useful' : 'not useful'}` : `Saved as analysis #${rec.id}`}</span>
+    </div>
+    <div class="fb-note" hidden style="margin-top:12px">
+      <label for="fb-note-${rec.id}">What was wrong or missing? <span class="hint">(optional)</span></label>
+      <textarea id="fb-note-${rec.id}" maxlength="500" rows="2"></textarea>
+      <button type="button" style="margin-top:8px" data-fb-send>Send</button>
+    </div>
+  </section>`;
+}
+
+export function wireFeedback(container) {
+  const box = container.querySelector('.feedback');
+  if (!box) return;
+  const id = box.dataset.id;
+  const status = box.querySelector('.fb-status');
+  const send = async (feedback, note) => {
+    const res = await fetch(`/api/analyses/${id}/feedback`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ feedback, note }) });
+    status.textContent = res.ok ? 'Thanks, saved.' : 'Could not save feedback.';
+  };
+  box.querySelector('[data-fb="useful"]').onclick = () => { box.querySelector('.fb-note').hidden = true; send('useful'); };
+  box.querySelector('[data-fb="not_useful"]').onclick = () => { box.querySelector('.fb-note').hidden = false; send('not_useful'); };
+  box.querySelector('[data-fb-send]').onclick = () => send('not_useful', box.querySelector('textarea').value);
+}
+
 export function renderReport(rec) {
   const { logic, ai } = rec;
   const notice =
@@ -181,5 +214,6 @@ export function renderReport(rec) {
     ${rec.confidence ? confidenceBlock(rec.confidence) : ''}
     ${ai ? experiment(ai.experiment, logic.sizing) : ''}
     ${ai ? diagnosis(ai) : ''}
-    ${ai?.missing_info?.length ? `<section class="block"><h2>Data that would sharpen this</h2><ul style="margin:0;padding-left:18px">${ai.missing_info.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>${ai.confidence_reason ? `<p class="small muted" style="margin:10px 0 0">Model's note on confidence: ${esc(ai.confidence_reason)}</p>` : ''}</section>` : ''}`;
+    ${ai?.missing_info?.length ? `<section class="block"><h2>Data that would sharpen this</h2><ul style="margin:0;padding-left:18px">${ai.missing_info.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>${ai.confidence_reason ? `<p class="small muted" style="margin:10px 0 0">Model's note on confidence: ${esc(ai.confidence_reason)}</p>` : ''}</section>` : ''}
+    ${feedbackBar(rec)}`;
 }

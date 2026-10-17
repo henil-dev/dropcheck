@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Analysis · Dropcheck</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <a class="brand" href="/">drop<span>check</span></a>
+      <nav class="nav">
+        <a href="/">New analysis</a>
+        <a href="/history" class="on">History</a>
+        <a href="/admin">Admin</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <p class="small" style="margin:0 0 8px"><a href="/history">← All analyses</a></p>
+    <h1 id="title">Analysis</h1>
+    <p class="lede" id="meta"></p>
+    <div id="result"></div>
+  </main>
+
+  <script type="module">
+    import { esc, when } from '/util.js';
+    import { renderReport, wireFeedback } from '/render.js';
+    const id = Number(new URLSearchParams(location.search).get('id'));
+    const box = document.getElementById('result');
+    const res = await fetch(`/api/analyses/${id}`).catch(() => null);
+    if (!res || !res.ok) {
+      box.innerHTML = '<div class="alert err">This analysis does not exist or could not be loaded.</div>';
+    } else {
+      const rec = await res.json();
+      document.getElementById('title').textContent = rec.input.funnelName;
+      document.getElementById('meta').innerHTML = `Analysis #${rec.id} · ${when(rec.created_at)}${rec.meta?.model ? ` · ${esc(rec.meta.model)}` : ''}${rec.meta?.latencyMs ? ` · ${(rec.meta.latencyMs / 1000).toFixed(1)}s` : ''}`;
+      const changes = rec.input.recentChanges ? `<section class="block"><h2>Recent changes given</h2><p style="margin:0">${esc(rec.input.recentChanges)}</p></section>` : '';
+      box.innerHTML = renderReport(rec) + changes;
+      wireFeedback(box);
+    }
+  </script>
+</body>
+</html>
