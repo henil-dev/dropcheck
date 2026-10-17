@@ -1,4 +1,5 @@
 import { esc } from '/util.js';
+import { renderReport } from '/render.js';
 
 const form = document.getElementById('funnel-form');
 const body = document.getElementById('steps-body');
@@ -130,7 +131,8 @@ form.addEventListener('submit', async (e) => {
       return;
     }
     if (json.warnings?.length) showAlert('warn', 'Ran with a few caveats', json.warnings);
-    resultBox.innerHTML = `<div class="alert info">Input is valid: ${json.input.steps.length} steps.</div>`;
+    resultBox.innerHTML = renderReport(json);
+    resultBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch {
     showAlert('err', 'Could not reach the server. Check your connection and try again.');
   } finally {

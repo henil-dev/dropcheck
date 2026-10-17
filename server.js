@@ -2,6 +2,7 @@ import express from 'express';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { validateFunnel } from './lib/validate.js';
+import { analyzeFunnel } from './lib/funnel.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -13,7 +14,8 @@ app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] })
 app.post('/api/analyze', (req, res) => {
   const v = validateFunnel(req.body);
   if (!v.ok) return res.status(400).json({ error: 'Please fix the highlighted fields.', errors: v.errors, warnings: v.warnings });
-  res.json({ input: v.data, warnings: v.warnings });
+  const logic = analyzeFunnel(v.data);
+  res.json({ input: v.data, warnings: v.warnings, logic });
 });
 
 app.use((err, req, res, next) => {
