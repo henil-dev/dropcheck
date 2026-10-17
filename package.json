@@ -1,0 +1,19 @@
+{
+  "name": "dropcheck",
+  "version": "1.0.0",
+  "description": "Find out why users drop off at a funnel step and what to test next.",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "brief": "node scripts/build-brief.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "marked": "^14.1.4"
+  }
+}

@@ -1,0 +1,14 @@
+modules = ["nodejs-20"]
+run = "npm start"
+
+[nix]
+channel = "stable-24_05"
+
+[[ports]]
+localPort = 3000
+externalPort = 80
+
+[deployment]
+run = ["sh", "-c", "npm start"]
+build = ["sh", "-c", "npm install"]
+deploymentTarget = "vm"
