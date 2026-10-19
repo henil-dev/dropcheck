@@ -5,7 +5,7 @@
 <tr><th>Project name</th><td>Dropcheck</td></tr>
 <tr><th>Made for</th><td>Airtribe GenAI Builder: "From Workflow Pain to a Working AI Product" (core project)</td></tr>
 <tr><th>Track</th><td>Track 3: Marketing &amp; Growth, Funnel Drop-off Diagnosis Tool</td></tr>
-<tr><th>Date</th><td>30 January</td></tr>
+<tr><th>Date</th><td>19 October 2026</td></tr>
 </table>
 
 ## Submission links
