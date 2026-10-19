@@ -1,5 +1,6 @@
-import { esc } from '/util.js';
-import { renderReport, wireFeedback } from '/render.js';
+import { esc } from './util.js';
+import { analyze, mode } from './api.js';
+import { renderReport, wireFeedback } from './render.js';
 
 const form = document.getElementById('funnel-form');
 const body = document.getElementById('steps-body');
@@ -119,23 +120,20 @@ form.addEventListener('submit', async (e) => {
   startProgress();
 
   try {
-    const res = await fetch('/api/analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(readForm()),
-    });
-    const json = await res.json().catch(() => ({ error: 'The server sent back something unexpected.' }));
-    if (!res.ok) {
+    const { ok, data: json } = await analyze(readForm());
+    if (!ok) {
       markInvalid(json.errors);
       showAlert('err', json.error || 'Request failed.', (json.errors || []).map((x) => x.message));
       return;
     }
-    if (json.warnings?.length) showAlert('warn', 'Ran with a few caveats', json.warnings);
+    const notes = [...(json.warnings || []), ...(json.saveNote ? [json.saveNote] : [])];
+    if (notes.length) showAlert('warn', 'Ran with a few caveats', notes);
     resultBox.innerHTML = renderReport(json);
     wireFeedback(resultBox);
     resultBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  } catch {
-    showAlert('err', 'Could not reach the server. Check your connection and try again.');
+  } catch (err) {
+    console.error(err);
+    showAlert('err', mode === 'server' ? 'Could not reach the server. Check your connection and try again.' : 'Something went wrong while running the analysis. Try again.');
   } finally {
     stopProgress();
     submitBtn.disabled = false;

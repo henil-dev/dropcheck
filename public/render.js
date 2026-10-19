@@ -1,4 +1,5 @@
-import { esc, pct, int } from '/util.js';
+import { esc, pct, int } from './util.js';
+import { sendFeedback } from './api.js';
 
 const FLAG = {
   regression: ['bad', 'Real drop vs last period'],
@@ -181,8 +182,8 @@ export function wireFeedback(container) {
   const id = box.dataset.id;
   const status = box.querySelector('.fb-status');
   const send = async (feedback, note) => {
-    const res = await fetch(`/api/analyses/${id}/feedback`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ feedback, note }) });
-    status.textContent = res.ok ? 'Thanks, saved.' : 'Could not save feedback.';
+    const ok = await sendFeedback(id, feedback, note).catch(() => false);
+    status.textContent = ok ? 'Thanks, saved.' : 'Could not save feedback.';
   };
   box.querySelector('[data-fb="useful"]').onclick = () => { box.querySelector('.fb-note').hidden = true; send('useful'); };
   box.querySelector('[data-fb="not_useful"]').onclick = () => { box.querySelector('.fb-note').hidden = false; send('not_useful'); };

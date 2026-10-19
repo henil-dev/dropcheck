@@ -7,26 +7,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/styles.css">
-  <style>
-    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; margin-bottom: 18px; }
-    .stat { background: var(--surface); padding: 16px 18px; }
-    .stat .v { font-family: var(--mono); font-size: 26px; font-weight: 600; line-height: 1.1; }
-    .stat .k { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
-    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-    .two .block { margin-bottom: 0; }
-    .days { display: flex; align-items: flex-end; gap: 6px; height: 120px; border-bottom: 1px solid var(--line); }
-    .days .d { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; }
-    .days .b { background: var(--ink); min-height: 2px; border-radius: 1px 1px 0 0; position: relative; }
-    .days .b .e { position: absolute; left: 0; right: 0; bottom: 0; background: var(--accent); }
-    .days-lbl { display: flex; gap: 6px; font-size: 11px; color: var(--muted); margin-top: 4px; }
-    .days-lbl span { flex: 1; text-align: center; }
-    .hbar { display: grid; grid-template-columns: 90px 1fr 36px; align-items: center; gap: 10px; font-size: 13.5px; margin-bottom: 8px; }
-    .hbar .t { height: 8px; background: var(--soft); border-radius: 1px; }
-    .hbar .t i { display: block; height: 100%; background: var(--ink); border-radius: 1px; }
-    button.del { background: none; border: 0; color: var(--muted); padding: 0; font-size: 13px; text-decoration: underline; }
-    button.del:hover { color: var(--accent); background: none; }
-    @media (max-width: 720px) { .stats { grid-template-columns: repeat(2, 1fr); } .two { grid-template-columns: 1fr; } .scroll { overflow-x: auto; } }
-  </style>
 </head>
 <body>
   <header class="top">
@@ -43,106 +23,12 @@
   <main class="wrap">
     <h1>Admin</h1>
     <p class="lede" id="sub">Usage, quality checks and cost.</p>
-    <div id="app"><p class="muted">Loading…</p></div>
+    <div id="app"></div>
   </main>
 
   <script type="module">
-    import { esc, when, int } from '/util.js';
-    const app = document.getElementById('app');
-    const STATUS = { ok: ['ok', 'Diagnosed'], logic_only: ['plain', 'Checks only'], ai_error: ['bad', 'AI failed'] };
-    const TYPES = { saas_signup: 'SaaS signup', ecommerce_checkout: 'E-commerce', mobile_onboarding: 'Mobile onboarding', lead_gen: 'Lead gen', other: 'Other' };
-    const CONF = { High: 'ok', Medium: 'warn', Low: 'bad' };
-
-    const stat = (v, k) => `<div class="stat"><div class="v">${v}</div><div class="k">${k}</div></div>`;
-    const share = (a, b) => (b ? `${Math.round((a / b) * 100)}%` : '—');
-
-    function hbars(items) {
-      const max = Math.max(1, ...items.map((x) => x.n));
-      return items.map((x) => `<div class="hbar"><span>${esc(x.label)}</span><span class="t"><i style="width:${(x.n / max) * 100}%"></i></span><span class="num r">${x.n}</span></div>`).join('');
-    }
-
-    function days(perDay) {
-      const map = new Map(perDay.map((d) => [d.day, d]));
-      const list = [];
-      for (let i = 13; i >= 0; i--) {
-        const d = new Date(Date.now() - i * 864e5).toISOString().slice(0, 10);
-        list.push(map.get(d) || { day: d, n: 0, errors: 0 });
-      }
-      const max = Math.max(1, ...list.map((d) => d.n));
-      return `<div class="days">${list.map((d) => `<div class="d" title="${d.day}: ${d.n} analyses, ${d.errors} AI errors"><div class="b" style="height:${(d.n / max) * 100}%"><div class="e" style="height:${d.n ? (d.errors / d.n) * 100 : 0}%"></div></div></div>`).join('')}</div>
-        <div class="days-lbl">${list.map((d, i) => `<span>${i % 2 ? '' : d.day.slice(8)}</span>`).join('')}</div>
-        <p class="small muted" style="margin:8px 0 0">Last 14 days. Rust = runs where the AI step failed.</p>`;
-    }
-
-    async function load() {
-      const res = await fetch('/api/admin/stats');
-      if (!res.ok) { app.innerHTML = '<div class="alert err">Could not load stats.</div>'; return; }
-      const s = await res.json();
-      const t = s.totals;
-
-      document.getElementById('sub').innerHTML = `Model: <span class="num">${esc(s.llm.model)}</span> · AI key ${s.llm.configured ? '<span class="chip ok">set</span>' : '<span class="chip bad">missing</span>'} · ${s.protected ? 'password protected' : '<span class="chip warn">open: set ADMIN_PASSWORD to protect</span>'}`;
-
-      app.innerHTML = `
-        <div class="stats">
-          ${stat(int(t.total), 'Analyses')}
-          ${stat(share(t.aiError, t.total), `AI failures (${t.aiError})`)}
-          ${stat(t.avgConfidence ?? '—', 'Avg confidence')}
-          ${stat(t.avgLatencyMs ? (t.avgLatencyMs / 1000).toFixed(1) + 's' : '—', 'Avg AI time')}
-          ${stat(share(t.retried, t.ok), `Needed a retry (${t.retried})`)}
-          ${stat(t.genericFlags + t.unsupportedFlags, `Lines flagged (${t.genericFlags} generic, ${t.unsupportedFlags} unsupported)`)}
-          ${stat(share(t.useful, t.useful + t.notUseful), `Rated useful (${t.useful} of ${t.useful + t.notUseful})`)}
-          ${stat('$' + t.costUsd.toFixed(4), `Est. model cost · ${int(t.tokensIn + t.tokensOut)} tokens`)}
-        </div>
-
-        <section class="block"><h2>Analyses per day</h2>${days(s.perDay)}</section>
-
-        <div class="two">
-          <section class="block"><h2>Confidence</h2>
-            ${hbars([{ label: 'High', n: s.confidence.high }, { label: 'Medium', n: s.confidence.medium }, { label: 'Low', n: s.confidence.low }])}
-            <p class="small muted" style="margin:6px 0 0">Diagnosed runs only.</p>
-          </section>
-          <section class="block"><h2>Funnel types</h2>
-            ${s.byType.length ? hbars(s.byType.map((x) => ({ label: TYPES[x.type] || x.type, n: x.n }))) : '<p class="muted" style="margin:0">No data yet.</p>'}
-          </section>
-        </div>
-        <div style="height:18px"></div>
-        <div class="two">
-          <section class="block"><h2>Rejected inputs <span class="muted num" style="font-weight:400">${t.rejections}</span></h2>
-            ${s.topRejections.length ? `<ul class="small" style="margin:0;padding-left:18px">${s.topRejections.map((r) => `<li>${esc(r.reason)} <span class="muted">×${r.n}</span></li>`).join('')}</ul>` : '<p class="muted" style="margin:0">None.</p>'}
-            <p class="small muted" style="margin:10px 0 0">Blocked by validation before any model call.</p>
-          </section>
-          <section class="block"><h2>Recent AI errors</h2>
-            ${s.recentErrors.length ? `<ul class="small" style="margin:0;padding-left:18px">${s.recentErrors.map((e) => `<li><a href="/report?id=${e.id}">#${e.id}</a> ${esc(e.error)} <span class="muted">${when(e.created_at)}</span></li>`).join('')}</ul>` : '<p class="muted" style="margin:0">None.</p>'}
-          </section>
-        </div>
-        <div style="height:18px"></div>
-        ${s.notUseful.length ? `<section class="block"><h2>Marked not useful</h2><ul class="small" style="margin:0;padding-left:18px">${s.notUseful.map((n) => `<li><a href="/report?id=${n.id}">#${n.id} ${esc(n.funnel_name)}</a>${n.feedback_note ? `: "${esc(n.feedback_note)}"` : ''}</li>`).join('')}</ul></section>` : ''}
-
-        <section class="block"><h2>Recent runs</h2>
-          <div class="scroll"><table class="data small"><thead><tr><th>#</th><th>When</th><th>Funnel</th><th>Result</th><th class="r">Conf.</th><th class="r">Tries</th><th class="r">Flags</th><th class="r">Time</th><th class="r">Tokens</th><th></th></tr></thead>
-          <tbody>${s.recent.map((r) => `<tr>
-            <td class="num muted">${r.id}</td><td>${when(r.created_at)}</td>
-            <td><a href="/report?id=${r.id}">${esc(r.funnel_name)}</a></td>
-            <td><span class="chip ${STATUS[r.status][0]}">${STATUS[r.status][1]}</span></td>
-            <td class="r">${r.confidence ?? '—'}${r.confidence_label ? ` <span class="chip ${CONF[r.confidence_label]}">${r.confidence_label[0]}</span>` : ''}</td>
-            <td class="r num">${r.attempts}</td>
-            <td class="r num">${r.generic_flags + r.unsupported_flags}</td>
-            <td class="r num">${r.latency_ms ? (r.latency_ms / 1000).toFixed(1) + 's' : '—'}</td>
-            <td class="r num">${int(r.tokens)}</td>
-            <td><button class="del" data-id="${r.id}">Delete</button></td>
-          </tr>`).join('') || '<tr><td colspan="10" class="muted">No runs yet.</td></tr>'}</tbody></table></div>
-        </section>`;
-
-      app.querySelectorAll('button.del').forEach((b) =>
-        b.addEventListener('click', async () => {
-          if (!confirm(`Delete analysis #${b.dataset.id}? This cannot be undone.`)) return;
-          const r = await fetch(`/api/admin/analyses/${b.dataset.id}`, { method: 'DELETE' });
-          if (r.ok) load();
-          else alert('Could not delete.');
-        })
-      );
-    }
-    load();
+    import { renderAdmin } from '/views.js';
+    renderAdmin(document.getElementById('app'), document.getElementById('sub'));
   </script>
 </body>
 </html>

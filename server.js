@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { validateFunnel } from './lib/validate.js';
 import { diagnose } from './lib/diagnose.js';
-import { llmConfigured, modelName } from './lib/llm.js';
+import { llmConfigured, modelName, gemini } from './lib/llm.js';
 import { saveAnalysis, logRejection, listAnalyses, getAnalysis, setFeedback, deleteAnalysis } from './lib/db.js';
 import { adminStats } from './lib/stats.js';
 
@@ -11,7 +11,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.set('trust proxy', 1); // Replit sits behind a proxy; needed for per-IP rate limiting
+app.set('trust proxy', 1); // when hosted behind a proxy; needed for per-IP rate limiting
 app.use(express.json({ limit: '100kb' }));
 
 // Admin is protected with HTTP Basic auth when ADMIN_PASSWORD is set (user name can be anything).
@@ -46,7 +46,7 @@ app.post('/api/analyze', rateLimit, async (req, res, next) => {
       logRejection(v.errors);
       return res.status(400).json({ error: 'Please fix the highlighted fields.', errors: v.errors, warnings: v.warnings });
     }
-    const result = await diagnose(v.data);
+    const result = await diagnose(v.data, gemini);
     const id = saveAnalysis(v.data, v.warnings, result);
     res.json({ id, input: v.data, warnings: v.warnings, ...result });
   } catch (err) {
