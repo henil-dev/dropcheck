@@ -2,8 +2,16 @@
 
 **Track 3: Marketing & Growth. Funnel Drop-off Diagnosis Tool**
 Author: Henil Shah
-Live app: https://claude.ai/artifact/8qcZS74zJutWY7zXg7YrEW
-Code: https://github.com/henil-dev/dropcheck
+
+## Submission links
+
+| Item | Link |
+|---|---|
+| Dropcheck page (live app) | https://claude.ai/artifact/8qcZS74zJutWY7zXg7YrEW |
+| GitHub repository | https://github.com/henil-dev/dropcheck |
+| Demo video | to be added |
+
+Built in Claude Code, versioned on GitHub, published as a Claude page. Claude is the AI layer. The live app needs a claude.ai sign-in for the AI diagnosis; the checks work without it.
 
 ---
 

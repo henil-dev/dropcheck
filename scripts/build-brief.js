@@ -1,6 +1,9 @@
-// Turns docs/product-brief.md into docs/brief.html.
-// Print that file to PDF (the repo uses headless Edge/Chrome) to get docs/product-brief.pdf.
-import { readFileSync, writeFileSync } from 'node:fs';
+// Turns docs/product-brief.md into docs/brief.html, then prints it to docs/product-brief.pdf
+// with headless Edge or Chrome (whichever is installed).
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { marked } from 'marked';
 
 const md = readFileSync('docs/product-brief.md', 'utf8');
@@ -16,11 +19,28 @@ const html = `<!doctype html>
   table { border-collapse: collapse; width: 100%; font-size: 9pt; margin: 8px 0; page-break-inside: auto; }
   tr { page-break-inside: avoid; }
   th, td { border: 1px solid #bbb; padding: 4px 6px; text-align: left; vertical-align: top; }
-  th { background: #f0eee8; }
-  blockquote { border-left: 3px solid #b5542a; margin: 8px 0; padding: 2px 12px; background: #faf8f4; }
+  th { background: #eef0f3; }
+  blockquote { border-left: 3px solid #2a4fb0; margin: 8px 0; padding: 2px 12px; background: #f5f6f8; }
   hr { border: 0; border-top: 1px solid #ccc; }
-  code { font-size: 9pt; background: #f0eee8; padding: 0 3px; }
+  a { color: #2a4fb0; }
+  code { font-size: 9pt; background: #eef0f3; padding: 0 3px; }
 </style></head><body>${body}</body></html>`;
 
 writeFileSync('docs/brief.html', html);
 console.log('wrote docs/brief.html');
+
+const browsers = [
+  'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+  'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+  'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+  '/usr/bin/google-chrome',
+  '/usr/bin/chromium',
+];
+const browser = browsers.find((b) => existsSync(b));
+if (!browser) {
+  console.log('No Edge/Chrome found: open docs/brief.html and print it to PDF.');
+} else {
+  const out = path.resolve('docs/product-brief.pdf');
+  execFileSync(browser, ['--headless=new', '--disable-gpu', '--no-pdf-header-footer', `--print-to-pdf=${out}`, pathToFileURL(path.resolve('docs/brief.html')).href], { stdio: 'ignore' });
+  console.log('wrote docs/product-brief.pdf');
+}
