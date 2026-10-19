@@ -98,12 +98,16 @@ export async function analyze(body) {
   } else {
     const docId = newId();
     try {
-      await db.collection('analyses').doc(docId).set(row);
+      // Round-trip through JSON: the store rejects undefined values (optional fields on step rows).
+      await db.collection('analyses').doc(docId).set(JSON.parse(JSON.stringify(row)));
       id = docId;
     } catch (e) {
-      saveNote = e?.code === 'invalid_argument'
+      console.error('save failed', e);
+      const user = await userP;
+      const canWrite = user ? await user.can('data.write').catch(() => null) : null;
+      saveNote = canWrite === false
         ? 'This run was not saved: your access to this page is view-only. Ask the owner for Contributor access to keep history.'
-        : 'This run could not be saved. The report below is still complete.';
+        : `This run could not be saved (${e?.code || 'unknown error'}). The report below is still complete.`;
     }
   }
   return { ok: true, data: { id, input: v.data, warnings: v.warnings, saveNote, ...result } };
