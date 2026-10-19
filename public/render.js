@@ -213,7 +213,7 @@ export function renderReport(rec) {
     ${ai ? part('02', 'Diagnosis', `from ${esc(rec.meta?.model || 'the model')}, then checked by code`) : ''}
     ${ai?.summary ? `<section class="block"><h2>Summary</h2><p style="margin:0;font-size:16px">${esc(ai.summary)}</p></section>` : ''}
     ${rec.confidence ? confidenceBlock(rec.confidence) : ''}
-    ${ai ? experiment(ai.experiment, logic.sizing) : ''}
+    ${ai ? experiment(ai.experiment, (logic.sizings || [logic.sizing]).find((s) => s?.step === ai.experiment.step)) : ''}
     ${ai ? diagnosis(ai) : ''}
     ${ai?.missing_info?.length ? `<section class="block"><h2>Data that would sharpen this</h2><ul style="margin:0;padding-left:18px">${ai.missing_info.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>${ai.confidence_reason ? `<p class="small muted" style="margin:10px 0 0">Model's note on confidence: ${esc(ai.confidence_reason)}</p>` : ''}</section>` : ''}
     ${feedbackBar(rec)}`;
