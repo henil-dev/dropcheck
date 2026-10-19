@@ -1,0 +1,112 @@
+<title>Dropcheck</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#new">drop<span>check</span></a>
+    <nav class="nav">
+      <a href="#new" data-view="new">New analysis</a>
+      <a href="#history" data-view="history">History</a>
+      <a href="#admin" data-view="admin" id="nav-admin" hidden>Admin</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="view-new">
+
+    <h1>Why are users dropping off?</h1>
+    <p class="lede">Enter each funnel step, how many users reached it, and what they see there. Dropcheck checks the numbers first, then suggests causes and one experiment you can run.</p>
+
+    <form id="funnel-form" novalidate>
+      <section class="block">
+        <div class="grid">
+          <div>
+            <label for="funnelName">Funnel name</label>
+            <input id="funnelName" name="funnelName" maxlength="80" placeholder="e.g. Self-serve trial signup">
+          </div>
+          <div>
+            <label for="funnelType">Type</label>
+            <select id="funnelType" name="funnelType">
+              <option value="">Choose…</option>
+              <option value="saas_signup">SaaS signup / trial</option>
+              <option value="ecommerce_checkout">E-commerce checkout</option>
+              <option value="mobile_onboarding">Mobile app onboarding</option>
+              <option value="lead_gen">Lead generation</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label for="periodDays">Period <span class="hint">(days)</span></label>
+            <input id="periodDays" name="periodDays" type="number" min="1" max="90" value="7">
+          </div>
+        </div>
+      </section>
+
+      <section class="block">
+        <div class="block-head">
+          <h2>Steps</h2>
+          <button type="button" class="link" id="load-example">Fill with an example</button>
+        </div>
+        <table class="steps">
+          <thead>
+            <tr>
+              <th></th>
+              <th class="c-name">Step name</th>
+              <th>What the user sees or has to do</th>
+              <th class="c-users">Users</th>
+              <th class="c-base">Last period <span class="hint">conv. %</span></th>
+              <th class="c-x"></th>
+            </tr>
+          </thead>
+          <tbody id="steps-body"></tbody>
+        </table>
+        <div class="row-actions">
+          <button type="button" class="ghost" id="add-step">+ Add step</button>
+        </div>
+        <p class="muted small" style="margin:12px 0 0">Users = how many reached that step in the period. "Last period conv. %" is optional: the share of the previous step that made it to this one, last period. It is how Dropcheck tells a real drop from a normal one.</p>
+      </section>
+
+      <section class="block">
+        <label for="recentChanges">What changed recently? <span class="hint">(optional, but it makes the diagnosis much better)</span></label>
+        <textarea id="recentChanges" name="recentChanges" rows="3" maxlength="1500" placeholder="Releases, new fields, pricing changes, campaigns, outages… with dates if you have them"></textarea>
+      </section>
+
+      <div id="form-alert"></div>
+
+      <div class="submit-row">
+        <button type="submit" id="submit">Diagnose</button>
+        <div class="progress" id="progress" hidden></div>
+      </div>
+    </form>
+
+    <div id="result" style="margin-top:36px"></div>
+  
+  </div>
+
+  <div id="view-history" hidden>
+    <h1>Past analyses</h1>
+    <p class="lede">Every analysis is saved, including the ones where the AI step failed.</p>
+    <section class="block" id="history-list"></section>
+  </div>
+
+  <div id="view-report" hidden>
+    <p class="small" style="margin:0 0 8px"><a href="#history">&larr; All analyses</a></p>
+    <h1 id="report-title">Analysis</h1>
+    <p class="lede" id="report-meta"></p>
+    <div id="report-body"></div>
+  </div>
+
+  <div id="view-admin" hidden>
+    <h1>Admin</h1>
+    <p class="lede" id="admin-sub">Usage, quality checks and cost.</p>
+    <div id="admin-body"></div>
+  </div>
+</main>
+
+<footer class="wrap">Dropcheck runs its checks in your browser and uses your own Claude account for the diagnosis. Source: <a href="https://github.com/henil-dev/dropcheck">github.com/henil-dev/dropcheck</a></footer>
+
+<script type="module" src="main.js"></script>
