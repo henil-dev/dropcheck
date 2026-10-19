@@ -1,7 +1,12 @@
 # Dropcheck: Product Brief
 
-**Track 3: Marketing & Growth. Funnel Drop-off Diagnosis Tool**
-Author: Henil Shah
+<table class="details">
+<tr><th>Name</th><td>Henil Shah</td></tr>
+<tr><th>Project name</th><td>Dropcheck</td></tr>
+<tr><th>Made for</th><td>Airtribe GenAI Builder: "From Workflow Pain to a Working AI Product" (core project)</td></tr>
+<tr><th>Track</th><td>Track 3: Marketing &amp; Growth, Funnel Drop-off Diagnosis Tool</td></tr>
+<tr><th>Date</th><td>30 January</td></tr>
+</table>
 
 ## Submission links
 
