@@ -2,6 +2,8 @@
 
 **Track 3: Marketing & Growth. Funnel Drop-off Diagnosis Tool**
 Author: Henil Shah
+Live app: https://claude.ai/artifact/8qcZS74zJutWY7zXg7YrEW
+Code: https://github.com/henil-dev/dropcheck
 
 ---
 
@@ -89,36 +91,40 @@ Most of this problem does **not** need AI, so the product splits the work:
 | Diagnosing noise | A step with 35 users drops from 60% to 45% | Chasing random variation | Logic layer runs a z-test against the baseline and marks steps under 100 users as "low sample". Confidence is capped and the UI says so. |
 | Wrong math | Model miscalculates rates | Wrong focus step | The model never calculates. All numbers come from code and are passed in as facts. |
 | Bad input | Step 3 has more users than Step 2; empty descriptions | Garbage in, garbage out | Validation blocks the request with a clear message before any API call. |
-| LLM down / timeout / bad JSON | API error or broken output | Blank screen | 25s timeout, JSON parse with schema check, one retry. If it still fails, the user still gets the full logic-layer report with a notice, and the failure is logged in the admin dashboard. |
+| LLM down / limit hit / bad JSON | Model error, usage limit, or broken output | Blank screen | JSON parse with a shape check, one retry with the error quoted back. If it still fails, the user still gets the full logic-layer report with a plain notice of what went wrong, and the failure is logged in the admin dashboard. |
+| Viewer can't use Claude | Signed out, or declined the "allow Claude" prompt | Nothing happens | The checks run in the browser without any model, so the funnel table, significance tests and test sizing still show. The page says why the diagnosis is missing. |
 | Over-confidence | Model says 95% sure on thin data | False certainty | Final confidence is the **lower** of a data-quality score and the model's own score, minus penalties for generic or unsupported lines. |
 | Every step flagged | User doesn't know where to start | Noise | Only the top 2 abnormal steps are sent for diagnosis, ranked by users lost. |
 
 ## 7. AI Trade-offs
 
-- **Model choice:** Gemini 2.5 Flash. Fast (2–6 s), cheap, supports JSON output with a schema. A larger model would write slightly better hypotheses but costs more and is slower. Since the logic layer already does the hard math and filtering, Flash is enough. The model name is a config value, so it can be swapped.
-- **Structured JSON vs free text:** JSON with a fixed schema makes the output checkable (evidence, generic filter, confidence), at the cost of less natural writing. Worth it.
-- **Temperature 0.4:** low enough to be consistent, high enough to give different hypotheses.
+- **Model choice:** Claude. The public version is a page published on claude.ai, and the AI step runs on Claude through that page. Claude follows long rule lists well, which matters here because the prompt carries nine rules about evidence and vague wording. The pipeline takes the model as a plug-in, so a local Node version of the same code runs on Gemini 2.5 Flash with no change to the checks.
+- **Structured JSON vs free text:** JSON with a fixed shape makes the output checkable (evidence, generic filter, confidence), at the cost of less natural writing. Worth it. Claude gets the shape as text, so the parser also accepts JSON wrapped in a code fence.
+- **Speed:** a Claude run takes 10–40 s because the model thinks before answering. Slower than a small model, but the tool is used once per funnel review, not in a live loop. The page shows each stage while it waits.
 - **Retry on generic output:** improves quality but can double cost and latency for that request. Limited to one retry.
 - **Narrow context:** only the abnormal steps plus surrounding steps are sent. Less context means less room for the model to wander, but it may miss a cause that started earlier in the funnel. Recent changes for the whole funnel are always included to reduce this.
 - **No fine-tuning or RAG yet:** not enough real data to justify it. Stored analyses + feedback could become that dataset later.
 
 ## 8. Cost & Sustainability
 
-Rough numbers (Gemini 2.5 Flash list pricing at the time of writing: about $0.30 per 1M input tokens and $2.50 per 1M output tokens):
+**How it is built and hosted:** developed in Claude Code, versioned on GitHub, and published as a Claude page (claude.ai artifact). No separate server or hosting bill. The page keeps its history in its own built-in database.
 
-- One analysis ≈ 1,500 input tokens + 900 output tokens ≈ **$0.0027**
-- With a retry (estimated in 15–20% of runs) ≈ $0.0055 for that run
+**Who pays for the model:** each run uses the signed-in viewer's own Claude plan, and Claude asks the viewer to allow it the first time. So the cost to me as the builder is **$0 per analysis**, and usage can grow without a bill growing with it. The trade-off: someone without a Claude account only gets the logic-layer report.
+
+**If I ran it on a paid API instead** (the local Node version with Gemini 2.5 Flash, at about $0.30 per 1M input tokens and $2.50 per 1M output tokens when written):
+- One analysis ≈ 1,500 input + 900 output tokens ≈ **$0.0027**
+- With a retry (15–20% of runs) ≈ $0.0055 for that run
 - 1,000 analyses a month ≈ **$3–4**
-- Hosting on Replit + SQLite: within a basic plan
 
 **Keeping it sustainable:**
-- Code does all the math, so tokens are spent only on reasoning.
-- Validation stops bad input before it costs anything.
+- Code does all the math, so the model only does reasoning.
+- Validation stops bad input before any model call.
 - Only flagged steps go to the model, not the whole funnel history.
-- Tokens and latency per run are stored and shown in the admin dashboard so cost is visible.
-- If usage grew: cache identical inputs, add per-user rate limits, and offer a "logic only" mode that costs nothing.
+- Identical inputs within five minutes reuse the stored answer instead of calling Claude again.
+- Retries, failures and latency per run are stored and shown in the admin dashboard.
+- If nothing stands out in the funnel, the model is not called at all.
 
-**Pricing idea if this were a product:** free for 10 analyses a month, then a small team plan. Margin is high because model cost per analysis is under a cent.
+**Pricing idea if this were a product:** free while it runs on the viewer's Claude plan. A team version on a paid API would be a small monthly plan. Model cost per analysis is under a cent.
 
 ## 9. Reflection
 
