@@ -14,7 +14,7 @@
 |---|---|
 | Dropcheck page (live app) | https://claude.ai/artifact/8qcZS74zJutWY7zXg7YrEW |
 | GitHub repository | https://github.com/henil-dev/dropcheck |
-| Demo video | to be added |
+| Demo video (Loom) | https://www.loom.com/share/5b024675e1b64a69b9d22f5de115d74c |
 
 Built in Claude Code, versioned on GitHub, published as a Claude page. Claude is the AI layer. The live app needs a claude.ai sign-in for the AI diagnosis; the checks work without it.
 

@@ -7,6 +7,7 @@ Built for Airtribe's "From Workflow Pain to a Working AI Product" project, Track
 **JTBD:** When I see a drop in conversion, I want to understand the cause and what to test, so I can improve the funnel.
 
 - **Live app:** https://claude.ai/artifact/8qcZS74zJutWY7zXg7YrEW (open while signed in to claude.ai)
+- **Demo video:** https://www.loom.com/share/5b024675e1b64a69b9d22f5de115d74c
 - **Product brief:** [`docs/product-brief.pdf`](docs/product-brief.pdf) (source: [`docs/product-brief.md`](docs/product-brief.md))
 
 **Tools:** built in Claude Code, versioned on GitHub, published as a Claude page, Claude as the LLM.
